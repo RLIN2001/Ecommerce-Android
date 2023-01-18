@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "220603046723",
+    "project_id": "provab-82085",
+    "storage_bucket": "provab-82085.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220603046723:android:2a530713cf5ee240d6adf6",
+        "android_client_info": {
+          "package_name": "it.itsar.provab"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "220603046723-v70iaejin3hus4ca7bqpcvk4bmo50j5k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.itsar.provab",
+            "certificate_hash": "3c1fdc955f01fb4f92622b3a375847cb69a51e6f"
+          }
+        },
+        {
+          "client_id": "220603046723-6qn3ajpsei4gau8divt30niioorja8hi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDg8Dknq0cMznLCiILYvk5xRbzUZzUsq2Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "220603046723-6qn3ajpsei4gau8divt30niioorja8hi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

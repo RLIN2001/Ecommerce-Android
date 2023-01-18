@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/homeFragment"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+
+    tools:context=".HomeFragment">
+
+
+
+
+
+
+            <SearchView
+                android:layout_marginTop="8dp"
+                android:id="@+id/searchView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                android:queryHint="Cerca qui"
+                android:iconifiedByDefault="false"
+                android:layout_alignParentTop="true"
+                />
+
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:id="@+id/nomeP"
+                android:text="I nostri prodotti:"
+                android:layout_marginLeft="16dp"
+                android:textAlignment="center"
+                android:textSize="24dp"
+                android:textStyle="bold"/>
+
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="550dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:id="@+id/msg"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Prodotto non trovato"
+                android:layout_marginLeft="16dp"
+                android:textAlignment="center"
+                android:visibility="invisible"
+                android:textSize="15dp"
+                android:textStyle="bold"/>
+
+
+</androidx.appcompat.widget.LinearLayoutCompat>
