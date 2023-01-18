@@ -1,2 +1,2 @@
-# Android native app using Java language
+# Android native app using Java
 E-commerce demo
