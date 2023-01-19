@@ -1,25 +1,36 @@
 package it.itsar.provab;
 
 
+import static android.content.ContentValues.TAG;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Registration extends AppCompatActivity {
     EditText username,passwd,passwdC;
+    final FirebaseFirestore db = FirebaseFirestore.getInstance();
     Button registrazione;
-    int count=0;
+    boolean found;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,111 +48,72 @@ public class Registration extends AppCompatActivity {
             if (username.getText().toString().isEmpty() || passwd.getText().toString().isEmpty()||passwdC.getText().toString().isEmpty())
                 Snackbar.make(view,"Tutti i campi devono essere inseriti",1000).show();
 
-            else if(!passwd.getText().toString().equals(passwdC.getText().toString())){
+            else if(!passwd.getText().toString().equals(passwdC.getText().toString()))
                 Snackbar.make(view,"Le due password inserite devono coincidere",1000).show();
 
-            }
-
-            else{
-
-
-
-
-                ReadWriteFile readWriteFile=new ReadWriteFile();
-
-                File file= new File(getFilesDir(),"utente");
-                if(file.exists()){
-                    try {
-                        String txt=readWriteFile.leggi("utente",getFilesDir());
-
-                        String[] credenziali = txt.split("\\s+");
+            else
+                checkUser(view);
+            });
 
 
 
-                        ArrayList<String> userN=getUsername(credenziali);
+    }
 
+    private void checkUser(View view) {
+        found=false;
+        db.collection("utenti")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                if(document.getData().get("username").equals(username.getText().toString())) {
+                                    found = true;
+                                    break;
+                                }
+                            }
 
+                            if(found ==true)
+                                Snackbar.make(view,"account già esistente, riprova con un altro username",1000).show();
+                            else {
+                                addUser();
+                            }
 
-                        if(userN.contains(username.getText().toString()))
-                            Snackbar.make(view,"L'username inserito esiste già",1000).show();
-
-                        else {
-
-
-
-
-                            SessionManager sessionManager=new SessionManager(this);
-                            count = sessionManager.sharedPreferences.getInt("counter", 0);
-
-
-                            readWriteFile.scrivi("utente", count+":"+username.getText().toString() + " " + passwd.getText().toString() + "\n", getFilesDir());
-
-
-                            sessionManager.editor.putInt("counter", (count+1)).commit();
-
-
-                            Intent intent=new Intent(this,Login.class);
-                            startActivity(intent);
+                        } else {
+                            Log.w(TAG, "Error getting documents.", task.getException());
                         }
 
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
-                }
-                else{
+                });
 
 
-                    try {
+    }
 
+    private void addUser() {
 
-                        SessionManager sessionManager=new SessionManager(this);
-                        count = sessionManager.sharedPreferences.getInt("counter", 0);
+        Map<String, Object> user = new HashMap<>();
+        user.put("username", username.getText().toString());
+        user.put("password", passwd.getText().toString());
 
-                        readWriteFile.scrivi("utente",count+":"+username.getText().toString()+" "+passwd.getText().toString()+"\n",getFilesDir());
-                        sessionManager.editor.putInt("counter", (count+1)).commit();
-
-                        Intent intent=new Intent(this,Login.class);
+        db.collection("utenti")
+                .add(user)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                        Intent intent = new Intent(Registration.this, Login.class);
                         startActivity(intent);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
-
-
-                }
-
-
-            }
-        });
-
-
-
-
-
-
-
-
-
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error adding document", e);
+                    }
+                });
     }
 
-    private ArrayList<String> getUsername(String[] credenziali) {
-        ArrayList<String> username=new ArrayList<>();
-        ArrayList<String> parts=new ArrayList<>();
 
-        for(int i=0;i<credenziali.length;i++)
-        {
-            if(i%2==0)
-                parts.add(credenziali[i]);
-        }
-
-        for(int i=0;i<parts.size();i++)
-        {
-            username.add(parts.get(i).substring(parts.get(i).indexOf(":") +1));
-        }
-
-        return username;
-
-
-    }
 
 }

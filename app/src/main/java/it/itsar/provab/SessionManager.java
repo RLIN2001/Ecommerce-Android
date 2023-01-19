@@ -26,6 +26,7 @@ public class SessionManager {
         editor.putString("utente", json).commit();
 
         editor.putString("username", user.getUsername()).commit();
+        editor.putString("documentId", user.getDocumentId()).commit();
 
         editor.putString("password", user.getPassword()).commit();
 

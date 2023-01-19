@@ -46,17 +46,7 @@ public class ProfileFragment extends Fragment {
         buttonExit.setOnClickListener(view1 -> {
 
             sessionManagement.removeSession();
-
-            File f= new File(getActivity().getFilesDir(),"carrello");
-
-            if (f.delete()) {
-                moveToLogin();
-            }
-            else{
-                moveToLogin();
-
-
-            }
+            moveToLogin();
 
         });
 

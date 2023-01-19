@@ -1,28 +1,44 @@
 package it.itsar.provab;
 
 
+import static android.content.ContentValues.TAG;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Detail extends AppCompatActivity {
-
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
     TextView titolo, prezzo, descrizione, quantita,back;
     ImageView imageView, plus, minus;
     Button buttonA;
+    SessionManager sessionManagement;
 
+    String key;
+    Boolean found=false;
     private int qnty = 1;
+    private long quan;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,11 +60,11 @@ public class Detail extends AppCompatActivity {
 
         Prodotto prodotto = (Prodotto) getIntent().getSerializableExtra("prodotto");
 
-        titolo.setText(prodotto.getNome());
-        prezzo.setText("" + prodotto.getPrezzo() + "€");
-        descrizione.setText("Descrizione:\n" + prodotto.getDescrizione());
-        imageView.setImageResource(prodotto.getFoto());
 
+
+        setInfoProdotto(prodotto);
+
+        sessionManagement = new SessionManager(this);
 
         plus.setOnClickListener(view -> {
             qnty++;
@@ -68,104 +84,158 @@ public class Detail extends AppCompatActivity {
                 Toast.makeText(this, "Quantità non può essere inferiore a 1 per poterlo inserire al carrello", Toast.LENGTH_SHORT).show();
         });
 
-
         buttonA.setOnClickListener(view -> {
-
-            SessionManager sessionManagement = new SessionManager(this);
-
             if(checkLogin()==false){
-                new AlertDialog.Builder(this)
-                        .setTitle("Attenzione")
-                        .setMessage("Non sei loggato, premi ok per passare al login")
-                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-
-                                Intent intent=new Intent(Detail.this, Login.class);
-                                startActivity(intent);
-                                finish();
-                            }
-                        })
-                        .setNegativeButton(android.R.string.no, null)
-                        .show();
+               alertNotLogin();
 
             }
             else {
 
-
-                ReadWriteFile readWriteFile = new ReadWriteFile();
-
-                File file = new File(getFilesDir(), "carrello");
-                if (!file.exists()) {
-                    try {
-                        readWriteFile.scrivi("carrello", prodotto.getId()+" "+qnty+",", getFilesDir());
-                        finish();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-
-                else
-                {
-                    try {
-                        String txt = readWriteFile.leggi("carrello",getFilesDir());
-
-                        String []split=txt.split(",");
-
-                        String s="";
-
-                        for (String string : split)
-                            s+=string+" ";
-
-
-                        ArrayList<String>id=new ArrayList<>();
-                        ArrayList<String>quantity=new ArrayList<>();
-
-
-                        String []split2= s.split(" ");
+                sessionManagement = new SessionManager(this);
+                String documentId=sessionManagement.sharedPreferences.getString("documentId","");
 
 
 
+                db.collection("utenti").document(documentId)
+                        .collection("carrello")
+                        .get()
+                        .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                            @Override
+                            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                if (task.isSuccessful()) {
+                                    for (QueryDocumentSnapshot document : task.getResult()) {
+                                            if(document.getData().get("nome").equals(prodotto.getNome())){
+                                               trovaProdotto(document);
+                                                break;
 
-                        for(int i=0;i<split2.length;i++)
-                        {
-                            if(i%2==0) {
-                                id.add(split2[i]);
+                                            }
+                                    }
+
+                                    if(found==true){
+                                      aggiornaCarrello(documentId);
+                                    }
+                                    else{
+                                        aggiungiProdotto(prodotto,documentId);
+
+                                    }
+                                } else {
+                                    Log.w(TAG, "Error getting documents.", task.getException());
+                                }
                             }
-                            else
-                                quantity.add(split2[i]);
-                        }
+                        });
 
-
-
-
-
-
-
-                        if(id.contains(prodotto.getId())) {
-
-                            int index=id.indexOf(prodotto.getId());
-                            txt = txt.replaceAll(id.get(index)+" "+quantity.get(index), id.get(index)+" "+(Integer.parseInt(quantity.get(index))+qnty));
-                            readWriteFile.sovrascrivi(getFilesDir(),txt);
-                            finish();
-                        }
-                        else
-                        {
-                            readWriteFile.scrivi("carrello", prodotto.getId()+" "+qnty+",", getFilesDir());
-                            finish();
-                        }
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
             }
 
 
 
 
         });
+    }
+
+
+
+
+
+
+
+    private void aggiungiProdotto(Prodotto prodotto, String documentId) {
+
+        Map<String, Object> dati = new HashMap<>();
+        dati.put("nome",prodotto.getNome());
+        dati.put("prezzo",prodotto.getPrezzo());
+        dati.put("quantita",qnty);
+        dati.put("immagine",prodotto.getFoto());
+
+
+        db.collection("utenti").document(documentId)
+                .collection("carrello")
+                .add(dati)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                        finish();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error adding document", e);
+                    }
+                });
+
+    }
+
+
+
+
+
+
+    private void aggiornaCarrello(String documentId) {
+
+        db.collection("utenti").document(documentId)
+                .collection("carrello")
+                .document(key)
+                .update("quantita",((int)quan+qnty))
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Log.e("messaggio","aggiornato");
+                        finish();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("messaggio","errore"+ e);
+
+                    }
+                });
+    }
+
+
+
+
+
+    private void trovaProdotto(QueryDocumentSnapshot document) {
+        found=true;
+        quan=(long) document.getData().get("quantita");
+        key=(String) document.getId();
+    }
+
+
+
+
+
+
+    private void alertNotLogin() {
+        new AlertDialog.Builder(this)
+                .setTitle("Attenzione")
+                .setMessage("Non sei loggato, premi ok per passare al login")
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        Intent intent=new Intent(Detail.this, Login.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                })
+                .setNegativeButton(android.R.string.no, null)
+                .show();
+    }
+
+
+
+
+
+
+    private void setInfoProdotto(Prodotto prodotto) {
+        titolo.setText(prodotto.getNome());
+        prezzo.setText("" + prodotto.getPrezzo() + "€");
+        descrizione.setText("Descrizione:\n" + prodotto.getDescrizione());
+        imageView.setImageResource(prodotto.getFoto());
+
+
     }
 
 
